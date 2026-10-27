@@ -1,10 +1,27 @@
 # companion-module-soundcraft-ui
 
+[Bitfocus Companion](https://bitfocus.io/companion) module for the Soundcraft Ui12, Ui16 and Ui24R mixing consoles.
+The module talks to the mixer over WebSocket using the [soundcraft-ui-connection](https://github.com/fmalcher/soundcraft-ui) library.
+
+The user documentation shown inside Companion lives in [companion/HELP.md](companion/HELP.md): supported console functions, variables, rotary encoder presets and the icon pack.
+Example button pages for every feature area are in [examples/](examples/).
+
 ## Getting started
 
 Execute `yarn` command to install the dependencies.
 The module can be built once with `yarn build`. This should be enough to get the module to be loadable by companion.
 While developing the module, by using `yarn dev` the compiler will be run in watch mode to recompile the files on change.
+
+```bash
+yarn            # install dependencies
+yarn dev        # build in watch mode
+yarn build      # clean build to dist/
+yarn lint       # run ESLint
+yarn dist       # build the distribution package (pkg/ and soundcraft-ui-<version>.tgz)
+yarn icons      # regenerate the icon pack (see below)
+```
+
+To try the module in Companion without a release, point the _Developer modules path_ in the Companion settings to a folder that contains the built `pkg/soundcraft-ui` directory.
 
 ## Master fader and level display
 
@@ -34,15 +51,30 @@ The step size can be changed in the `Change fader value (dB)` actions of the but
 The channel presets show the channel name and, when the fader level variables are enabled in the connection settings, the current level in dB and %.
 For custom buttons, use any `Change fader value` action in the "Rotate left" / "Rotate right" action groups of a button.
 
+## Presets
+
+| Section                         | Buttons                                                           |
+| ------------------------------- | ----------------------------------------------------------------- |
+| Master Channels: MUTE           | MUTE toggle with feedback for every channel on the master bus     |
+| Master Channels: SOLO           | SOLO toggle with feedback for every channel on the master bus     |
+| Master Channels: Fader (rotary) | Rotary fader per channel, press = MUTE                            |
+| AUX Bus 1..n                    | MUTE, PRE/POST and rotary send fader for every channel on the bus |
+| Media Player                    | Elapsed/remaining time, previous, next, play/stop, stop, pause    |
+| Master                          | Rotary master fader with dB/% display, DIM (Ui24R only)           |
+
 ## Icon pack
 
 All presets come with graphics in one visual language: white line icons on black buttons for controls (MUTE, SOLO, PRE/POST, transport) and colored tiles for faders and active states (red = MUTE, yellow = SOLO, green = POST, blue = DIM). The fader tiles are colored by channel type (input blue, line teal, player purple, FX magenta, subgroup green, AUX orange, VCA yellow, master red).
 
-The graphics live in `icons/` as PNG (72 × 72) and are bundled into `src/icons.generated.ts`, so no files have to be shipped next to the module. To change them, edit the glyphs in `scripts/iconpack/glyphs.mjs` or the colors in `scripts/build-icons.mjs` and run:
+The presets use the graphics as full-button image with the text at the bottom and the top bar disabled, so the text does not overlap the icon.
+
+The graphics live in `icons/` as PNG (72 × 72) and are bundled into `src/icons.generated.ts`, so no files have to be shipped next to the module. To change them, edit the glyphs in `scripts/iconpack/glyphs.mjs` or the colors and tile list in `scripts/build-icons.mjs` and run:
 
 ```bash
 npm install --no-save @resvg/resvg-js
 yarn icons
 ```
 
-`yarn icons --svg <dir>` writes the SVG sources instead, for editing in a vector tool.
+`yarn icons --svg <dir>` writes the SVG sources instead, for editing in a vector tool. `yarn icons --bundle` only rebuilds `src/icons.generated.ts` from the PNG files in `icons/`.
+
+Glyph rules: 24 × 24 grid with a 2 unit margin, 2 unit stroke with round caps and joins, one ink per glyph. Tiles pick white or near-black ink automatically from the tile color.
