@@ -28,6 +28,8 @@ export const instanceConfigFields: SomeCompanionConfigField[] = [
 		type: 'checkbox',
 		id: 'enableFaderLevelVars',
 		label: 'Enable Fader Level variables (dB)',
+		tooltip:
+			'Creates a dB level variable for every channel on every bus. Also shows the dB level on the rotary fader presets.',
 		width: 12,
 		default: false,
 	},
@@ -35,6 +37,8 @@ export const instanceConfigFields: SomeCompanionConfigField[] = [
 		type: 'checkbox',
 		id: 'enableFaderLevelVarsPct',
 		label: 'Enable Fader Level variables (%)',
+		tooltip:
+			'Creates a percent level variable for every channel on every bus. Also shows the percent level on the rotary fader presets. The master level (m_level, m_level_pct) is always available.',
 		width: 12,
 		default: false,
 	},

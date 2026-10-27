@@ -97,7 +97,7 @@ export default class SoundcraftUiInstance extends InstanceBase<UiSchema> {
 		const variableDefs = await createVariables(this.variablesStore, this.conn, config)
 		this.setVariableDefinitions(variableDefs)
 
-		const [sections, presetDefs] = await createPresets(this.conn)
+		const [sections, presetDefs] = await createPresets(this.conn, config)
 		this.setPresetDefinitions(sections, presetDefs)
 	}
 

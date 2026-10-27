@@ -27,12 +27,12 @@ export async function createVariables(
 		conn.master.faderLevelDB$.pipe(map((v) => mapInfinityToNumber(v))),
 	)
 
-	if (config.enableFaderLevelVarsPct) {
-		addVar(
-			{ id: 'm_level_pct', name: 'Master: Fader Level (%)' },
-			conn.master.faderLevel$.pipe(map((lin) => convertLinearValueToPercent(lin))),
-		)
-	}
+	// The master level in percent is always available (independent of the config option),
+	// so that the master fader can be displayed on buttons without enabling all channel variables.
+	addVar(
+		{ id: 'm_level_pct', name: 'Master: Fader Level (%)' },
+		conn.master.faderLevel$.pipe(map((lin) => convertLinearValueToPercent(lin))),
+	)
 
 	/****** Shows ******/
 	addVar({ id: 'show_show', name: 'Shows: Current Show' }, conn.shows.currentShow$)
