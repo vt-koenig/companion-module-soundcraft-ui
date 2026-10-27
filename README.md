@@ -33,3 +33,16 @@ The module ships presets for controlling faders with rotary encoders. Drag them 
 The step size can be changed in the `Change fader value (dB)` actions of the button.
 The channel presets show the channel name and, when the fader level variables are enabled in the connection settings, the current level in dB and %.
 For custom buttons, use any `Change fader value` action in the "Rotate left" / "Rotate right" action groups of a button.
+
+## Icon pack
+
+All presets come with graphics in one visual language: white line icons on black buttons for controls (MUTE, SOLO, PRE/POST, transport) and colored tiles for faders and active states (red = MUTE, yellow = SOLO, green = POST, blue = DIM). The fader tiles are colored by channel type (input blue, line teal, player purple, FX magenta, subgroup green, AUX orange, VCA yellow, master red).
+
+The graphics live in `icons/` as PNG (72 × 72) and are bundled into `src/icons.generated.ts`, so no files have to be shipped next to the module. To change them, edit the glyphs in `scripts/iconpack/glyphs.mjs` or the colors in `scripts/build-icons.mjs` and run:
+
+```bash
+npm install --no-save @resvg/resvg-js
+yarn icons
+```
+
+`yarn icons --svg <dir>` writes the SVG sources instead, for editing in a vector tool.

@@ -11,7 +11,8 @@
 		"build:main": "tsc -p tsconfig.build.json",
 		"lint:raw": "eslint",
 		"lint": "yarn lint:raw .",
-		"dist": "yarn companion-module-build"
+		"dist": "yarn companion-module-build",
+		"icons": "node scripts/build-icons.mjs"
 	},
 	"author": "Ferdinand Malcher <ferdinand@malcher.media>",
 	"contributors": [

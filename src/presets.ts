@@ -1,5 +1,7 @@
 import {
 	combineRgb,
+	type CompanionButtonStyleProps,
+	type CompanionFeedbackButtonStyleResult,
 	type CompanionPresetDefinitions,
 	type CompanionPresetDefinition,
 	type CompanionPresetSection,
@@ -9,6 +11,7 @@ import { feedbackDefaultStyles } from './feedback.js'
 import { firstValueFrom } from 'rxjs'
 import type { UiSchema } from './schema.js'
 import type { UiConfig } from './config.js'
+import { controlIcon, tile, type Glyph, type TileColor } from './icons.js'
 
 /** Fader step size in dB for one tick of a rotary encoder */
 const ROTARY_STEP_DB = 1
@@ -16,12 +19,65 @@ const ROTARY_STEP_DB = 1
 const WHITE = combineRgb(255, 255, 255)
 const BLACK = combineRgb(0, 0, 0)
 
+/** Tile color for a channel type on the master bus */
+const CHANNEL_TYPE_COLORS: Record<string, TileColor> = {
+	i: 'input',
+	l: 'line',
+	p: 'player',
+	f: 'fx',
+	s: 'sub',
+	a: 'aux',
+	v: 'vca',
+}
+
+type TextSize = '14' | '18' | '24'
+type TextLines = 1 | 2 | 3
+
+/**
+ * Button style of the icon pack: graphic as full-button image, text at the bottom.
+ * Companion draws the text over the image, so the graphics keep the lower part free
+ * (control icons) or dim it with a band (tiles). The top bar is disabled because it
+ * would shrink the image and shift the text into the glyph.
+ */
+function iconStyle(text: string, size: TextSize, png64: string | undefined): CompanionButtonStyleProps {
+	return {
+		text,
+		size,
+		color: WHITE,
+		bgcolor: BLACK,
+		png64,
+		pngalignment: 'center:center',
+		alignment: 'center:bottom',
+		show_topbar: false,
+	}
+}
+
+/** Black button with a white control icon at the top */
+function controlStyle(glyph: Glyph, text: string, size: TextSize = '14'): CompanionButtonStyleProps {
+	return iconStyle(text, size, controlIcon(glyph))
+}
+
+/** Colored tile with glyph and a text band for the given number of lines */
+function tileStyle(glyph: Glyph, color: TileColor, lines: TextLines, text: string): CompanionButtonStyleProps {
+	return iconStyle(text, '14', tile(glyph, color, lines))
+}
+
+/** Feedback style: keep the default colors (fallback without image) and add the matching tile */
+function tileFeedbackStyle(
+	base: CompanionFeedbackButtonStyleResult,
+	glyph: Glyph,
+	color: TileColor,
+	lines: TextLines,
+): CompanionFeedbackButtonStyleResult {
+	return { ...base, png64: tile(glyph, color, lines) }
+}
+
 /**
  * Build the level lines for a fader button text.
  * The channel level variables only exist when enabled in the config,
  * so the lines are only added when the respective variables are available.
  */
-function faderLevelLines(variablePart: string, config: UiConfig): string {
+function faderLevelLines(variablePart: string, config: UiConfig): string[] {
 	const lines: string[] = []
 	if (config.enableFaderLevelVars) {
 		lines.push(`$(module:${variablePart}_level) dB`)
@@ -29,7 +85,16 @@ function faderLevelLines(variablePart: string, config: UiConfig): string {
 	if (config.enableFaderLevelVarsPct) {
 		lines.push(`$(module:${variablePart}_level_pct) %`)
 	}
-	return lines.map((l) => `\\n${l}`).join('')
+	return lines
+}
+
+/** Join text lines for a button text (Companion interprets the literal \n) */
+function joinLines(lines: string[]): string {
+	return lines.join('\\n')
+}
+
+function lineCount(lines: string[]): TextLines {
+	return Math.min(Math.max(lines.length, 1), 3) as TextLines
 }
 
 /**
@@ -38,16 +103,12 @@ function faderLevelLines(variablePart: string, config: UiConfig): string {
  * The button text shows the current level in dB and percent.
  */
 function makeMasterFaderButton(masterDim: boolean): CompanionPresetDefinition<UiSchema> {
+	const text = joinLines(['MASTER', '$(module:m_level) dB', '$(module:m_level_pct) %'])
 	return {
 		type: 'simple',
 		name: 'Master: Fader (rotary)',
 		keywords: ['rotary', 'encoder', 'knob', 'volume', 'level'],
-		style: {
-			text: `MASTER\\n$(module:m_level) dB\\n$(module:m_level_pct) %`,
-			size: '14',
-			color: WHITE,
-			bgcolor: BLACK,
-		},
+		style: tileStyle('knob', 'master', 3, text),
 		steps: [
 			{
 				down: masterDim ? [{ actionId: 'dimmaster', options: { dim: 2 } }] : [],
@@ -61,7 +122,7 @@ function makeMasterFaderButton(masterDim: boolean): CompanionPresetDefinition<Ui
 					{
 						feedbackId: 'dimmaster',
 						options: {},
-						style: feedbackDefaultStyles.dim,
+						style: tileFeedbackStyle(feedbackDefaultStyles.dim, 'knob', 'dim', 3),
 					},
 				]
 			: [],
@@ -79,16 +140,13 @@ function makeMasterChannelFaderButton(
 	namePart: string,
 	config: UiConfig,
 ): CompanionPresetDefinition<UiSchema> {
+	const lines = [`$(module:m_${variablePart}_name)`, ...faderLevelLines(`m_${variablePart}`, config)]
+	const n = lineCount(lines)
 	return {
 		type: 'simple',
 		name: `Master Bus: ${namePart} Fader (rotary)`,
 		keywords: ['rotary', 'encoder', 'knob', 'volume', 'level'],
-		style: {
-			text: `$(module:m_${variablePart}_name)${faderLevelLines(`m_${variablePart}`, config)}`,
-			size: '14',
-			color: WHITE,
-			bgcolor: BLACK,
-		},
+		style: tileStyle('knob', CHANNEL_TYPE_COLORS[channelType] ?? 'input', n, joinLines(lines)),
 		steps: [
 			{
 				down: [{ actionId: 'mutemasterchannel', options: { channelType, channel, mute: 2 } }],
@@ -105,7 +163,7 @@ function makeMasterChannelFaderButton(
 			{
 				feedbackId: 'mutemasterchannel',
 				options: { channelType, channel },
-				style: feedbackDefaultStyles.mute,
+				style: tileFeedbackStyle(feedbackDefaultStyles.mute, 'knob', 'mute', n),
 			},
 		],
 	}
@@ -123,16 +181,13 @@ function makeAuxChannelFaderButton(
 	namePart: string,
 	config: UiConfig,
 ): CompanionPresetDefinition<UiSchema> {
+	const lines = [`AUX ${bus} $(module:m_${variablePart}_name)`, ...faderLevelLines(`aux${bus}_${variablePart}`, config)]
+	const n = lineCount(lines)
 	return {
 		type: 'simple',
 		name: `AUX Bus ${bus}: ${namePart} Fader (rotary)`,
 		keywords: ['rotary', 'encoder', 'knob', 'volume', 'level', 'send'],
-		style: {
-			text: `AUX ${bus}\\n$(module:m_${variablePart}_name)${faderLevelLines(`aux${bus}_${variablePart}`, config)}`,
-			size: '14',
-			color: WHITE,
-			bgcolor: BLACK,
-		},
+		style: tileStyle('knob', 'aux', n, joinLines(lines)),
 		steps: [
 			{
 				down: [{ actionId: 'muteauxchannel', options: { bus, channelType, channel, mute: 2 } }],
@@ -149,7 +204,7 @@ function makeAuxChannelFaderButton(
 			{
 				feedbackId: 'muteauxchannel',
 				options: { bus, channelType, channel },
-				style: feedbackDefaultStyles.mute,
+				style: tileFeedbackStyle(feedbackDefaultStyles.mute, 'knob', 'mute', n),
 			},
 		],
 	}
@@ -164,12 +219,7 @@ function makeMasterChannelMuteButton(
 	return {
 		type: 'simple',
 		name: `Master Bus: ${namePart} MUTE`,
-		style: {
-			text: `MUTE\\n$(module:m_${variablePart}_name)`,
-			size: '18',
-			color: combineRgb(255, 255, 255),
-			bgcolor: combineRgb(0, 0, 0),
-		},
+		style: controlStyle('mute', `MUTE\\n$(module:m_${variablePart}_name)`),
 		steps: [
 			{
 				down: [{ actionId: 'mutemasterchannel', options: { channelType, channel, mute: 2 } }],
@@ -180,7 +230,7 @@ function makeMasterChannelMuteButton(
 			{
 				feedbackId: 'mutemasterchannel',
 				options: { channelType, channel },
-				style: feedbackDefaultStyles.mute,
+				style: tileFeedbackStyle(feedbackDefaultStyles.mute, 'mute', 'mute', 2),
 			},
 		],
 	}
@@ -195,12 +245,7 @@ function makeMasterChannelSoloButton(
 	return {
 		type: 'simple',
 		name: `Master Bus: ${namePart} SOLO`,
-		style: {
-			text: `SOLO\\n$(module:m_${variablePart}_name)`,
-			size: '18',
-			color: combineRgb(255, 255, 255),
-			bgcolor: combineRgb(0, 0, 0),
-		},
+		style: controlStyle('solo', `SOLO\\n$(module:m_${variablePart}_name)`),
 		steps: [
 			{
 				down: [{ actionId: 'solomasterchannel', options: { channelType, channel, solo: 2 } }],
@@ -211,7 +256,7 @@ function makeMasterChannelSoloButton(
 			{
 				feedbackId: 'solomasterchannel',
 				options: { channelType, channel },
-				style: feedbackDefaultStyles.solo,
+				style: tileFeedbackStyle(feedbackDefaultStyles.solo, 'solo', 'solo', 2),
 			},
 		],
 	}
@@ -227,12 +272,7 @@ function makeAuxChannelMuteButton(
 	return {
 		type: 'simple',
 		name: `AUX Bus ${bus}: ${namePart} MUTE`,
-		style: {
-			text: `AUX ${bus}\\nMUTE\\n$(module:m_${variablePart}_name)`,
-			size: '18',
-			color: combineRgb(255, 255, 255),
-			bgcolor: combineRgb(0, 0, 0),
-		},
+		style: controlStyle('mute', `AUX ${bus} MUTE\\n$(module:m_${variablePart}_name)`),
 		steps: [
 			{
 				down: [{ actionId: 'muteauxchannel', options: { bus, channelType, channel, mute: 2 } }],
@@ -243,7 +283,7 @@ function makeAuxChannelMuteButton(
 			{
 				feedbackId: 'muteauxchannel',
 				options: { bus, channelType, channel },
-				style: feedbackDefaultStyles.mute,
+				style: tileFeedbackStyle(feedbackDefaultStyles.mute, 'mute', 'mute', 2),
 			},
 		],
 	}
@@ -259,12 +299,7 @@ function makeAuxChannelPrePostButton(
 	return {
 		type: 'simple',
 		name: `AUX Bus ${bus}: ${namePart} PRE/POST`,
-		style: {
-			text: `AUX ${bus}\\nPRE\\n$(module:m_${variablePart}_name)`,
-			size: '14',
-			color: combineRgb(255, 255, 255),
-			bgcolor: combineRgb(0, 0, 0),
-		},
+		style: controlStyle('pre', `AUX ${bus} PRE\\n$(module:m_${variablePart}_name)`),
 		steps: [
 			{
 				down: [{ actionId: 'setauxchannelpost', options: { bus, channelType, channel, post: 2 } }],
@@ -276,8 +311,8 @@ function makeAuxChannelPrePostButton(
 				feedbackId: 'postauxchannel',
 				options: { bus, channelType, channel },
 				style: {
-					...feedbackDefaultStyles.post,
-					text: `AUX ${bus}\\nPOST\\n$(module:m_${variablePart}_name)`,
+					...tileFeedbackStyle(feedbackDefaultStyles.post, 'post', 'post', 2),
+					text: `AUX ${bus} POST\\n$(module:m_${variablePart}_name)`,
 				},
 			},
 		],
@@ -458,12 +493,7 @@ export async function createPresets(
 	presets['player_elapsed'] = {
 		type: 'simple',
 		name: `Player: Elapsed Time`,
-		style: {
-			text: `Elapsed\\n$(module:player_elapsed)`,
-			size: '14',
-			color: combineRgb(255, 255, 255),
-			bgcolor: combineRgb(0, 0, 0),
-		},
+		style: controlStyle('clock', `Elapsed\\n$(module:player_elapsed)`),
 		steps: [],
 		feedbacks: [],
 	}
@@ -472,12 +502,7 @@ export async function createPresets(
 	presets['player_remaining'] = {
 		type: 'simple',
 		name: `Player: Remaining Time`,
-		style: {
-			text: `Remaining\\n$(module:player_remaining)`,
-			size: '14',
-			color: combineRgb(255, 255, 255),
-			bgcolor: combineRgb(0, 0, 0),
-		},
+		style: controlStyle('clock', `Remaining\\n$(module:player_remaining)`),
 		steps: [],
 		feedbacks: [],
 	}
@@ -486,12 +511,7 @@ export async function createPresets(
 	presets['player_previous'] = {
 		type: 'simple',
 		name: `Player: Previous Track`,
-		style: {
-			text: `|<<`,
-			size: '24',
-			color: combineRgb(255, 255, 255),
-			bgcolor: combineRgb(0, 0, 0),
-		},
+		style: controlStyle('prev', 'Prev', '18'),
 		steps: [
 			{
 				down: [{ actionId: 'mediaprev', options: {} }],
@@ -505,12 +525,7 @@ export async function createPresets(
 	presets['player_next'] = {
 		type: 'simple',
 		name: `Player: Next Track`,
-		style: {
-			text: `>>|`,
-			size: '24',
-			color: combineRgb(255, 255, 255),
-			bgcolor: combineRgb(0, 0, 0),
-		},
+		style: controlStyle('next', 'Next', '18'),
 		steps: [
 			{
 				down: [{ actionId: 'medianext', options: {} }],
@@ -524,12 +539,7 @@ export async function createPresets(
 	presets['player_playstop'] = {
 		type: 'simple',
 		name: `Player: Play/Stop`,
-		style: {
-			text: 'Play/\\nStop',
-			size: '18',
-			color: combineRgb(255, 255, 255),
-			bgcolor: combineRgb(0, 0, 0),
-		},
+		style: controlStyle('play', 'Play/\\nStop'),
 		steps: [
 			{
 				down: [{ actionId: 'mediaplay', options: {} }],
@@ -541,16 +551,18 @@ export async function createPresets(
 				feedbackId: 'mediaplayerstate',
 				options: { state: PlayerState.Playing },
 				style: {
-					color: combineRgb(255, 255, 255),
+					color: WHITE,
 					bgcolor: combineRgb(255, 0, 0),
+					png64: tile('play', 'playing', 2),
 				},
 			},
 			{
 				feedbackId: 'mediaplayerstate',
 				options: { state: PlayerState.Stopped },
 				style: {
-					color: combineRgb(0, 0, 0),
+					color: WHITE,
 					bgcolor: combineRgb(0, 255, 0),
+					png64: tile('play', 'stopped', 2),
 				},
 			},
 		],
@@ -560,12 +572,7 @@ export async function createPresets(
 	presets['player_stop'] = {
 		type: 'simple',
 		name: `Player: Stop`,
-		style: {
-			text: 'STOP',
-			size: '18',
-			color: combineRgb(255, 255, 255),
-			bgcolor: combineRgb(0, 0, 0),
-		},
+		style: controlStyle('stop', 'Stop', '18'),
 		steps: [
 			{
 				down: [{ actionId: 'mediastop', options: {} }],
@@ -577,8 +584,9 @@ export async function createPresets(
 				feedbackId: 'mediaplayerstate',
 				options: { state: PlayerState.Playing },
 				style: {
-					color: combineRgb(255, 255, 255),
+					color: WHITE,
 					bgcolor: combineRgb(255, 0, 0),
+					png64: tile('stop', 'playing', 1),
 				},
 			},
 		],
@@ -588,12 +596,7 @@ export async function createPresets(
 	presets['player_pause'] = {
 		type: 'simple',
 		name: `Player: Pause`,
-		style: {
-			text: 'Pause',
-			size: '18',
-			color: combineRgb(255, 255, 255),
-			bgcolor: combineRgb(0, 0, 0),
-		},
+		style: controlStyle('pause', 'Pause', '18'),
 		steps: [
 			{
 				down: [{ actionId: 'mediapause', options: {} }],
@@ -605,8 +608,9 @@ export async function createPresets(
 				feedbackId: 'mediaplayerstate',
 				options: { state: PlayerState.Paused },
 				style: {
-					color: combineRgb(255, 255, 255),
+					color: WHITE,
 					bgcolor: combineRgb(255, 153, 51),
+					png64: tile('pause', 'paused', 1),
 				},
 			},
 		],
@@ -625,12 +629,7 @@ export async function createPresets(
 		presets['master_dim'] = {
 			type: 'simple',
 			name: `Master: DIM`,
-			style: {
-				text: `DIM Master`,
-				size: '18',
-				color: combineRgb(255, 255, 255),
-				bgcolor: combineRgb(0, 0, 0),
-			},
+			style: controlStyle('dim', 'DIM\\nMaster'),
 			steps: [
 				{
 					down: [{ actionId: 'dimmaster', options: { dim: 2 } }],
@@ -641,7 +640,7 @@ export async function createPresets(
 				{
 					feedbackId: 'dimmaster',
 					options: {},
-					style: feedbackDefaultStyles.dim,
+					style: tileFeedbackStyle(feedbackDefaultStyles.dim, 'dim', 'dim', 2),
 				},
 			],
 		}
