@@ -35,36 +35,50 @@ $(soundcraft-ui:m_level) dB
 $(soundcraft-ui:m_level_pct) %
 ```
 
+The presets use Companion text expressions instead, so a fader that is fully down reads `-inf` rather than `-100`:
+
+```
+'MASTER\n' + ($(soundcraft-ui:m_level) <= -100 ? '-inf' : $(soundcraft-ui:m_level)) + ' dB\n' + $(soundcraft-ui:m_level_pct) + ' %'
+```
+
+The numeric variables are unchanged. The SOLO bus and headphone levels are always available as `vol_solo_level`, `vol_hp1_level`, `vol_hp2_level` (dB) and their `_pct` counterparts.
 Level variables for all other channels (`m_input1_level`, `aux1_input1_level_pct`, ...) must be enabled in the connection settings.
 
 ## Rotary encoders (Stream Deck +, Loupedeck, ...)
 
 The module ships presets for controlling faders with rotary encoders. Drag them onto an encoder button and the rotary actions are set up automatically:
 
-| Preset section                    | Rotate                        | Press                      |
-| --------------------------------- | ----------------------------- | -------------------------- |
-| Master → `Master: Fader (rotary)` | Master level ±1 dB per tick   | Toggle DIM (Ui24R only)    |
-| Master Channels: Fader (rotary)   | Channel level ±1 dB per tick  | Toggle MUTE                |
-| AUX Bus n → `... Fader (rotary)`  | AUX send level ±1 dB per tick | Toggle MUTE on the AUX bus |
+| Preset section                    | Rotate                            | Press                      |
+| --------------------------------- | --------------------------------- | -------------------------- |
+| Master → `Master: Fader (rotary)` | Master level, one step per tick   | Toggle DIM (Ui24R only)    |
+| Master Channels: Fader (rotary)   | Channel level, one step per tick  | Toggle MUTE                |
+| AUX Bus n → `... Fader (rotary)`  | AUX send level, one step per tick | Toggle MUTE on the AUX bus |
+| FX Bus n → `... Fader (rotary)`   | FX send level, one step per tick  | Toggle MUTE on the FX bus  |
+| SOLO / Headphone Volume           | SOLO or headphone volume per tick | –                          |
 
-The step size can be changed in the `Change fader value (dB)` actions of the button.
+The step size is the connection setting **Rotary encoder step (dB)** (default 1 dB). It is applied when a preset is dragged onto a button; existing buttons keep their value, which lives in the `Change fader value (dB)` actions of the button.
 The channel presets show the channel name and, when the fader level variables are enabled in the connection settings, the current level in dB and %.
 For custom buttons, use any `Change fader value` action in the "Rotate left" / "Rotate right" action groups of a button.
 
 ## Presets
 
-| Section                         | Buttons                                                           |
-| ------------------------------- | ----------------------------------------------------------------- |
-| Master Channels: MUTE           | MUTE toggle with feedback for every channel on the master bus     |
-| Master Channels: SOLO           | SOLO toggle with feedback for every channel on the master bus     |
-| Master Channels: Fader (rotary) | Rotary fader per channel, press = MUTE                            |
-| AUX Bus 1..n                    | MUTE, PRE/POST and rotary send fader for every channel on the bus |
-| Media Player                    | Elapsed/remaining time, previous, next, play/stop, stop, pause    |
-| Master                          | Rotary master fader with dB/% display, DIM (Ui24R only)           |
+| Section                         | Buttons                                                                                  |
+| ------------------------------- | ---------------------------------------------------------------------------------------- |
+| Master Channels: MUTE           | MUTE toggle with feedback for every channel on the master bus                            |
+| Master Channels: SOLO           | SOLO toggle with feedback for every channel on the master bus                            |
+| Master Channels: Fader (rotary) | Rotary fader per channel, press = MUTE                                                   |
+| AUX Bus 1..n                    | MUTE, PRE/POST and rotary send fader for every channel on the bus                        |
+| FX Bus 1..n                     | MUTE, PRE/POST and rotary send fader for every channel on the bus                        |
+| SOLO / Headphone Volume         | Rotary faders for the SOLO bus and headphone 1/2 with dB/% display                       |
+| MUTE Groups                     | MUTE group 1-6, MUTE ALL and MUTE FX toggles with feedback                               |
+| Media Player                    | Elapsed/remaining time, previous, next, play/stop, stop, pause                           |
+| 2-Track Recorder                | Record toggle with feedback                                                              |
+| Multitrack Recorder             | Play/stop, stop, pause, record toggle, soundcheck toggle, elapsed/remaining (Ui24R only) |
+| Master                          | Rotary master fader with dB/% display, DIM (Ui24R only)                                  |
 
 ## Icon pack
 
-All presets come with graphics in one visual language: white line icons on black buttons for controls (MUTE, SOLO, PRE/POST, transport) and colored tiles for faders and active states (red = MUTE, yellow = SOLO, green = POST, blue = DIM). The fader tiles are colored by channel type (input blue, line teal, player purple, FX magenta, subgroup green, AUX orange, VCA yellow, master red).
+All presets come with graphics in one visual language: white line icons on black buttons for controls (MUTE, SOLO, PRE/POST, transport, record) and colored tiles for faders and active states (red = MUTE and recording, yellow = SOLO, green = POST, blue = DIM). The fader tiles are colored by channel type (input blue, line teal, player purple, FX magenta, subgroup green, AUX orange, VCA yellow, master red).
 
 The presets use the graphics as full-button image with the text at the bottom and the top bar disabled, so the text does not overlap the icon.
 

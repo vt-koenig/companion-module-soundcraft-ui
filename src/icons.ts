@@ -22,6 +22,9 @@ export type TileColor =
 	| 'playing'
 	| 'stopped'
 	| 'paused'
+	| 'phones'
+	| 'matrix'
+	| 'recording'
 
 export type Glyph =
 	| 'fader'

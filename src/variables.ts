@@ -34,6 +34,24 @@ export async function createVariables(
 		conn.master.faderLevel$.pipe(map((lin) => convertLinearValueToPercent(lin))),
 	)
 
+	/****** Volume buses (SOLO, Headphone) ******/
+	// Always available like the master level: only three buses, used by the volume presets.
+	const volumeBuses = [
+		{ id: 'solo', name: 'SOLO', bus: conn.volume.solo },
+		{ id: 'hp1', name: 'Headphone 1', bus: conn.volume.headphone(1) },
+		{ id: 'hp2', name: 'Headphone 2', bus: conn.volume.headphone(2) },
+	]
+	for (const { id, name, bus } of volumeBuses) {
+		addVar(
+			{ id: `vol_${id}_level`, name: `${name} Volume: Fader Level (dB)` },
+			bus.faderLevelDB$.pipe(map((v) => mapInfinityToNumber(v))),
+		)
+		addVar(
+			{ id: `vol_${id}_level_pct`, name: `${name} Volume: Fader Level (%)` },
+			bus.faderLevel$.pipe(map((lin) => convertLinearValueToPercent(lin))),
+		)
+	}
+
 	/****** Shows ******/
 	addVar({ id: 'show_show', name: 'Shows: Current Show' }, conn.shows.currentShow$)
 	addVar({ id: 'show_snapshot', name: 'Shows: Current Snapshot' }, conn.shows.currentSnapshot$)

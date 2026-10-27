@@ -5,6 +5,7 @@ export type UiConfig = {
 	enableFaderLevelVars?: boolean
 	enableFaderLevelVarsPct?: boolean
 	enablePanVars?: boolean
+	rotaryStepDB?: number
 }
 
 export const instanceConfigFields: SomeCompanionConfigField[] = [
@@ -23,6 +24,18 @@ export const instanceConfigFields: SomeCompanionConfigField[] = [
 		label: 'IP address change',
 		value:
 			'After changing the IP address of the mixer, it might be necessary to disable and re-enable the module or to restart Companion.',
+	},
+	{
+		type: 'number',
+		id: 'rotaryStepDB',
+		label: 'Rotary encoder step (dB)',
+		tooltip:
+			'Fader change per encoder tick used by the rotary presets. Applied when a preset is dragged onto a button; existing buttons keep their value.',
+		width: 6,
+		min: 0.1,
+		max: 12,
+		step: 0.1,
+		default: 1,
 	},
 	{
 		type: 'checkbox',

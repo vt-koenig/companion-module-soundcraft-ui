@@ -35,7 +35,8 @@ yarn icons           # Regenerate the icon pack (needs: npm install --no-save @r
 - **`src/actions.ts`** - 100+ action definitions (mute, solo, fader levels, media player, etc.) via `GetActionsList()`
 - **`src/feedback.ts`** - Boolean feedback definitions via `GetFeedbacksList()`, shows current mixer state on buttons
 - **`src/variables.ts`** - Dynamic variable definitions (fader levels, channel names, PAN values) via `createVariables()`
-- **`src/presets.ts`** - Pre-configured button layouts via `createPresets()`, including rotary encoder presets (`rotate_left` / `rotate_right` steps) for master, master channels and AUX sends. Receives the config, because channel level lines are only added when the level variables are enabled.
+- **`src/presets.ts`** - Pre-configured button layouts via `createPresets()`, including rotary encoder presets (`rotate_left` / `rotate_right` steps) for master, master channels, AUX/FX sends and the SOLO/headphone volume buses. Channels are enumerated once per bus through shared lists (`masterChannels()`, `auxChannels()`, `fxChannels()`) that every section (MUTE, SOLO, fader, PRE/POST) iterates. Receives the config: channel level lines are only added when the level variables are enabled, and the rotary step comes from `config.rotaryStepDB` (default 1 dB). Button texts are Companion text expressions built by a `textExpression` helper, which renders `-inf` for levels at or below -100 dB.
+- **`src/config.ts`** - Connection settings: host, variable toggles and `rotaryStepDB` (number field, 0.1..12 dB)
 - **`src/icons.ts`** - Access to the icon pack (`controlIcon()`, `tile()`), backed by the generated Base64 bundle `src/icons.generated.ts` (do not edit by hand)
 
 ### Icon Pack
@@ -43,7 +44,7 @@ yarn icons           # Regenerate the icon pack (needs: npm install --no-save @r
 - **`scripts/iconpack/glyphs.mjs`** - Glyph library: 24 × 24 grid, 2 unit stroke, one function `(ink) => svg` per glyph
 - **`scripts/build-icons.mjs`** - Renders control icons (`ctl_<glyph>`) and colored tiles (`tile_<glyph>_<color>_<n>l`, n = text lines 1..3) to `icons/*.png` with `@resvg/resvg-js` and bundles them into `src/icons.generated.ts`. The `TILES` list defines which combinations exist; add an entry there when a preset needs a new tile.
 - Presets use the graphics via `png64` with `alignment: 'center:bottom'` and `show_topbar: false`. The PNG files are committed, so the renderer is not a dependency of the module.
-- Variables `m_level` and `m_level_pct` (master) are always registered; all other level variables depend on the config flags.
+- Variables `m_level` / `m_level_pct` (master) and `vol_solo_level`, `vol_hp1_level`, `vol_hp2_level` (+ `_pct`) are always registered; all other level variables depend on the config flags.
 
 ### State Management (RxJS-based)
 

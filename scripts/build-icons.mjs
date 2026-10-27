@@ -62,13 +62,28 @@ const COLORS = {
 	playing: [[225, 30, 30]],
 	stopped: [[0, 200, 80]],
 	paused: [[255, 153, 51]],
+	phones: [[90, 120, 160]],
+	matrix: [[80, 90, 200]],
+	recording: [[225, 30, 30]],
 }
 
 // Which tiles the presets use: [glyph, color, lines]
 const TILES = [
-	...['master', 'input', 'line', 'player', 'fx', 'sub', 'aux', 'vca', 'mute', 'dim'].flatMap((c) =>
-		[1, 2, 3].map((n) => ['knob', c, n]),
-	),
+	...[
+		'master',
+		'input',
+		'line',
+		'player',
+		'fx',
+		'sub',
+		'aux',
+		'vca',
+		'mute',
+		'dim',
+		'solo',
+		'phones',
+		'matrix',
+	].flatMap((c) => [1, 2, 3].map((n) => ['knob', c, n])),
 	['mute', 'mute', 2],
 	['solo', 'solo', 2],
 	['post', 'post', 2],
@@ -77,6 +92,14 @@ const TILES = [
 	['play', 'stopped', 2],
 	['stop', 'playing', 1],
 	['pause', 'paused', 1],
+	['rec', 'recording', 1],
+	['rec', 'recording', 2],
+	['rec', 'paused', 2],
+	['sound', 'solo', 2],
+	['sound', 'phones', 2],
+	['fader', 'playing', 2],
+	['fader', 'stopped', 2],
+	['fader', 'paused', 1],
 ]
 
 const hex = ([r, g, b]) =>
